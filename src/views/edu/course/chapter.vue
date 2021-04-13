@@ -77,7 +77,25 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="上传视频">
-          <!-- TODO -->
+          <el-upload
+            :on-success="handleVodUploadSuccess"
+            :on-remove="handleVodRemove"
+            :before-remove="beforeVodRemove"
+            :on-exceed="handleUploadExceed"
+            :file-list="fileList"
+            :action="BASE_API+'/eduvod/video/uploadAiliyunVideo'"
+            :limit="1"
+            class="upload-demo">
+            <el-button size="small" type="primary">上传视频</el-button>
+            <el-tooltip placement="right-end">
+              <div slot="content">最大支持1G，<br>
+                支持3GP、ASF、AVI、DAT、DV、FLV、F4V、<br>
+                GIF、M2T、M4V、MJ2、MJPEG、MKV、MOV、MP4、<br>
+                MPE、MPG、MPEG、MTS、OGG、QT、RM、RMVB、<br>
+                SWF、TS、VOB、WMV、WEBM 等视频格式上传</div>
+              <i class="el-icon-question"/>
+            </el-tooltip>
+          </el-upload>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -101,6 +119,8 @@
         courseId:'',
         dialogChapterFormVisible: false,//章节弹框
         dialogVideoFormVisible: false,//小节弹框
+        fileList: [],//上传文件列表
+        BASE_API: process.env.BASE_API, // 接口API地址
         chapter:{
           title:'',
           sort: 0
@@ -109,7 +129,8 @@
           title:'',
           sort: 0,
           free:0,
-          videoSourceId:''
+          videoSourceId:'',
+          videoOriginalName:''
         }
 
       }
@@ -123,8 +144,32 @@
     },
 
     methods:{
-      //===================================小节==============================
+      handleVodRemove(){
+        video.deleteAliyunVideo(this.video.videoSourceId)
+          .then(resp =>{
+            this.$message({
+              type:'success',
+              message:'删除视频成功！'
+            })
+            this.fileList = []
+            this.video.videoOriginalName =''
+            this.video.videoSourceId = ''
+          })
+      },
 
+      beforeVodRemove(file,fileList){
+        return this.$confirm(`确定移除${file.name}?`)
+      },
+      //视图上传多于一个视频
+      handleUploadExceed(files, fileList) {
+        this.$message.warning('想要重新上传视频，请先删除已上传的视频')
+      },
+      //成功回调
+      handleVodUploadSuccess(responce,file,fileList){
+        this.video.videoSourceId = responce.data.videoId
+        this.video.videoOriginalName = file.name
+      },
+      //===================================小节==============================
       removeVideo(id){
         this.$confirm('此操作将永久删除小节记录','提示',{
           confirmButtonText:'确定',
